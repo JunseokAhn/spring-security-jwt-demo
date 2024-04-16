@@ -1,6 +1,8 @@
 package org.example.springsecurityjwtdemo.config;
 
 import lombok.RequiredArgsConstructor;
+import org.example.springsecurityjwtdemo.jwt.JwtFilter;
+import org.example.springsecurityjwtdemo.jwt.JwtUtil;
 import org.example.springsecurityjwtdemo.jwt.LoginFilter;
 import org.example.springsecurityjwtdemo.repository.MemoryUserRepository;
 import org.example.springsecurityjwtdemo.service.CustomUserDetailService;
@@ -23,6 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final ObjectPostProcessor<Object> objectPostProcessor;
+    private final JwtUtil jwtUtil;
 
     public AuthenticationManager authenticationManager() throws Exception {
         AuthenticationManagerBuilder builder = new AuthenticationManagerBuilder(objectPostProcessor);
@@ -40,7 +43,8 @@ public class SecurityConfig {
         return http.csrf(auth -> auth.disable())
                 .formLogin(auth -> auth.disable())
                 .httpBasic(auth -> auth.disable())
-                .addFilterAt(new LoginFilter(authenticationManager()), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtFilter(jwtUtil), LoginFilter.class)
+                .addFilterAt(new LoginFilter(authenticationManager(), jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/join").permitAll()

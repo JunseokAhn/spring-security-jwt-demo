@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.springsecurityjwtdemo.repository.MemoryTokenRepository;
 import org.example.springsecurityjwtdemo.service.CustomUserDetails;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,13 +15,13 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
-import java.util.Collection;
 
 @RequiredArgsConstructor
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final MemoryTokenRepository tokenRepository;
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -39,12 +40,20 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
             authority = localAuthority;
         }
         String role = authority.getAuthority();
-        String token = jwtUtil.createToken(username, role, 60 * 60 * 1000L);
-        response.addHeader("Authorization", "Bearer " + token);
+
+        //액세스토큰 설정
+        String accessToken = jwtUtil.createToken(username, role, jwtUtil.accessTokenExpireMs);
+        response.addHeader("Authorization", "Bearer " + accessToken);
+
+        //리프레쉬 토큰 설정
+        String refreshToken = jwtUtil.createToken(username, role, jwtUtil.refreshTokenExpireMs);
+        response.addHeader("X-Refresh-Token", refreshToken);
+        tokenRepository.save(customUserDetails.getUser().getUsername(), refreshToken);
     }
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         response.setStatus(401);
+
     }
 }

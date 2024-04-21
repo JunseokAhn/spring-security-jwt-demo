@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.springsecurityjwtdemo.jwt.JwtFilter;
 import org.example.springsecurityjwtdemo.jwt.JwtUtil;
 import org.example.springsecurityjwtdemo.jwt.LoginFilter;
+import org.example.springsecurityjwtdemo.repository.MemoryTokenRepository;
 import org.example.springsecurityjwtdemo.repository.MemoryUserRepository;
 import org.example.springsecurityjwtdemo.service.CustomUserDetailService;
 import org.springframework.context.annotation.Bean;
@@ -44,10 +45,10 @@ public class SecurityConfig {
                 .formLogin(auth -> auth.disable())
                 .httpBasic(auth -> auth.disable())
                 .addFilterBefore(new JwtFilter(jwtUtil), LoginFilter.class)
-                .addFilterAt(new LoginFilter(authenticationManager(), jwtUtil), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAt(new LoginFilter(authenticationManager(), jwtUtil, new MemoryTokenRepository()), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/join").permitAll()
+                        .requestMatchers("/", "/join", "/accessToken").permitAll()
                         .requestMatchers("/admin").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
